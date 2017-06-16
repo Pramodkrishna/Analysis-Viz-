@@ -54,20 +54,21 @@ summary(Saleprice_poolqc)
 "Correlation"
 correlations <- cor(train_num)
 
+
 corr.SalePrice <- as.matrix(sort(correlations[,'SalePrice'], decreasing = TRUE))
  "Sorting the data "
-corr.idx <- names(which(apply(corr.SalePrice, 1, function(x) (x > 0.5 | x < -0.5))))
+corr.idx <- names(which(apply(corr.SalePrice, 1, function(x) (x > 0.5))))
+corr.idx
 
-corrplot(as.matrix(correlations[corr.idx,corr.idx]), type = 'upper', method='color', addCoef.col = 'black', tl.cex = .7,cl.cex = .7, number.cex=.7)
+corrplot(as.matrix(correlations[corr.idx]), type = 'upper', method='color', addCoef.col = 'black', tl.cex = .7,cl.cex = .7, number.cex=.7)
 "Plotting to see which variables have the higher correlation, seems most of them have it "
 
 correlations_price <- as.data.frame(correlations)
 head(sort(correlations_price$SalePrice,decreasing = T))
 
 
-correlations_price <- as.data.frame(correlations)
 "Develop the model "
-train_price <- lm(formula = SalePrice~. ,data = train_num,na.action='na.exclude')
+train_price <- lm(formula = SalePrice ~ OverallQual+YearBuilt, data = train_num,na.action='na.exclude')
 train_price
 
 "Splitting the test data into numeric data "
@@ -81,8 +82,79 @@ Test_price  <- predict(train_price,test_price,inteval = 'confidence')
 
 "Comparing the means, we can also choose Anova method but this should also be fine "
 mean(Test_price)
-mean(train_num$SalePrice)
+#mean(train_num$SalePrice)
 
 "Seeing that the means are almost the same, we can say that our predicted model based
 on considering only the numeric variables seems to be good "
 "We should look into multicollinearity in the next step"
+
+
+"Better way to find correlation and then use it for prediction compared to the above method" 
+
+s1_data <- train_num
+
+View(s1_data)
+sapply(s1_data, function(x) sum(is.na(x)))
+"Finding which var have highest Na"
+
+"Repalce them with the mean values"
+s1_data$LotFrontage[is.na(s1_data$LotFrontage)] <- 80
+s1_data$GarageYrBlt[is.na(s1_data$GarageYrBlt)] <- 1980
+s1_data$MasVnrArea[is.na(s1_data$MasVnrArea)] <- 103
+
+"Always replace the Na values before we perform the Corr"
+
+"Finding the correlation"
+s1_cor <- as.data.frame(cor(s1_data))
+s1_cor_fin <- as.data.frame(s1_cor)
+s1_cor_price <- as.data.frame(s1_cor[38])
+
+
+summary(s1_cor_price$SalePrice)
+s1_cor_price$SalePrice[is.na(s1_cor_price$SalePrice)] <- 0
+s1_cor_price$names <- colnames(s1_cor)
+View(s1_cor_price)
+
+
+s1_cor_price <- s1_cor_price[order(s1_cor_price$SalePrice,decreasing = T),]
+View(s1_cor_price)
+
+
+"Selecting var which have cor value more than 0.5"
+s1_price <- as.data.frame(s1_cor_price[which(s1_cor_price[,1]>0.5),])
+
+View(s1_price)
+s1_price$names
+
+
+s1_lm1 <- lm(data = s1_data,formula = SalePrice ~ OverallQual+GrLivArea+GarageCars
+                                              +GarageArea+TotalBsmtSF+X1stFlrSF
+                                              +FullBath+TotRmsAbvGrd+YearBuilt+YearRemodAdd)
+
+
+
+price_pred <- predict(s1_lm1,test_price,interval = 'confidence')
+
+head(price_pred)
+
+
+"Selecting var which have cor more than 0.3"
+s1_price2 <- as.data.frame(s1_cor_price[which(s1_cor_price[,1]>0.3),])
+
+View(s1_price2)
+s1_price2$names
+
+
+s1_lm2 <- lm(data = s1_data,formula = SalePrice ~ OverallQual+GrLivArea+GarageCars
+             +GarageArea+TotalBsmtSF+X1stFlrSF
+             +FullBath+TotRmsAbvGrd+YearBuilt+YearRemodAdd+MasVnrArea
+             +Fireplaces+GarageYrBlt+BsmtFinSF1+LotFrontage+WoodDeckSF+X2ndFlrSF+
+               OpenPorchSF)
+
+
+price_pred2 <- predict(s1_lm2,test_price)
+
+
+  
+
+
