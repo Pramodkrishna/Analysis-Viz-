@@ -72,3 +72,6 @@ price_yearbuild_test
 #Conclusion
 #Since the cor.test and cor function have given a positive value 
 #We can conclude that year built more or less has an effect on the Sale price 
+
+
+#
