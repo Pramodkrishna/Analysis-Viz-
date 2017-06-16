@@ -96,8 +96,8 @@ s1_data <- train_num
 View(s1_data)
 sapply(s1_data, function(x) sum(is.na(x)))
 "Finding which var have highest Na"
-
-"Repalce them with the mean values"
+"We see that LotFront + garageyearbuilt and MasVnr have the highest missing values"
+    "Repalce them with the mean values"
 s1_data$LotFrontage[is.na(s1_data$LotFrontage)] <- 80
 s1_data$GarageYrBlt[is.na(s1_data$GarageYrBlt)] <- 1980
 s1_data$MasVnrArea[is.na(s1_data$MasVnrArea)] <- 103
@@ -107,6 +107,8 @@ s1_data$MasVnrArea[is.na(s1_data$MasVnrArea)] <- 103
 "Finding the correlation"
 s1_cor <- as.data.frame(cor(s1_data))
 s1_cor_fin <- as.data.frame(s1_cor)
+
+"Taking only the Correlated vairbale of Price with other var"
 s1_cor_price <- as.data.frame(s1_cor[38])
 
 
@@ -115,15 +117,13 @@ s1_cor_price$SalePrice[is.na(s1_cor_price$SalePrice)] <- 0
 s1_cor_price$names <- colnames(s1_cor)
 View(s1_cor_price)
 
-
+"Order the data"
 s1_cor_price <- s1_cor_price[order(s1_cor_price$SalePrice,decreasing = T),]
-View(s1_cor_price)
 
 
 "Selecting var which have cor value more than 0.5"
 s1_price <- as.data.frame(s1_cor_price[which(s1_cor_price[,1]>0.5),])
 
-View(s1_price)
 s1_price$names
 
 
@@ -154,6 +154,7 @@ s1_lm2 <- lm(data = s1_data,formula = SalePrice ~ OverallQual+GrLivArea+GarageCa
 
 price_pred2 <- predict(s1_lm2,test_price)
 
+"Conlusion: The mean of the first model is much closer to the mean of the house prices when compared to the second model" 
 
   
 
