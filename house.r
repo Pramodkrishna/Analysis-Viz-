@@ -159,7 +159,7 @@ summary(s1_lm2)
 is a significant relationship between the variables in the linear regression model of the data set faithful."
 
 price_pred2 <- predict(s1_lm2,test_price)
-price_pred2
+
 
 
 "Conlusion: The mean of the first model is much closer to the mean of the house prices when compared to the second model" 
@@ -185,10 +185,13 @@ View(test_price)
 
 
 "Validation of the predicted model"
+"We can perform Diagnostics plot to better understand how our data is distributed 
+And how well our model is prepared.You can find them in another branch - Diagnostic Plots"
 
 
-
-
+plot(train_price)
+plot(s1_lm1,pch = 20)
+plot(s1_lm2,pch = 20)
 
 
 
