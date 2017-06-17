@@ -68,7 +68,7 @@ head(sort(correlations_price$SalePrice,decreasing = T))
 
 
 "Develop the model "
-train_price <- lm(formula = SalePrice ~ OverallQual+YearBuilt, data = train_num,na.action='na.exclude')
+train_price <- lm(formula = SalePrice ~ ., data = train_num,na.action='na.exclude')
 train_price
 
 "Splitting the test data into numeric data "
@@ -132,10 +132,13 @@ s1_lm1 <- lm(data = s1_data,formula = SalePrice ~ OverallQual+GrLivArea+GarageCa
                                               +FullBath+TotRmsAbvGrd+YearBuilt+YearRemodAdd)
 
 
+summary(s1_lm1)
+"The p-value is much less than 0.05, we reject the null hypothesis that β = 0. 
+Hence there is a significant relationship between the variables in the linear regression model"
+
 
 price_pred <- predict(s1_lm1,test_price,interval = 'confidence')
 
-head(price_pred)
 
 
 "Selecting var which have cor more than 0.3"
@@ -151,11 +154,42 @@ s1_lm2 <- lm(data = s1_data,formula = SalePrice ~ OverallQual+GrLivArea+GarageCa
              +Fireplaces+GarageYrBlt+BsmtFinSF1+LotFrontage+WoodDeckSF+X2ndFlrSF+
                OpenPorchSF)
 
+summary(s1_lm2)
+"The p-value is much less than 0.05, we reject the null hypothesis that β = 0. Hence there 
+is a significant relationship between the variables in the linear regression model of the data set faithful."
 
 price_pred2 <- predict(s1_lm2,test_price)
+price_pred2
+
 
 "Conlusion: The mean of the first model is much closer to the mean of the house prices when compared to the second model" 
 
   
+
+"Using complete variables under consideration"
+
+train_price <- lm(formula = SalePrice ~ ., data = train_num,na.action='na.exclude')
+summary(train_price)
+
+"The pvalue is less than 0.05 so we can reject null hypothesis"
+
+
+s2_price <- predict(train_price,test_price,interval = 'confidence')
+
+
+s2_price <- as.data.frame(s2_price)
+View(s2_price)
+test_price$price <- predict(train_price,test_price,interval ='predict')
+View(test_price)
+
+
+
+"Validation of the predicted model"
+
+
+
+
+
+
 
 
