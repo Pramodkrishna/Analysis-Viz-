@@ -12,11 +12,17 @@ library(Metrics)
 
 # Load data
 
-train_pred <- read.csv("train.csv",stringsAsFactors = F)
+train_data <- read.csv("train.csv",stringsAsFactors = F)
+test_data <- read.csv("test.csv",stringsAsFactors = F)
 
-row.names(train_pred) <- train_pred$Id
+
+train_num <- select_if(train.csv,is.numeric)
+train_char <- select_if(train.csv,is.character)
+
+
 train_pred <- train_pred[,-1]
 train_pred[is.na(train_pred)] <- 0
+
 for(i in colnames(train_pred[,sapply(train_pred,is.character)])){
   train_pred[,i] <- as.factor(train_pred[,i])
 }
@@ -24,6 +30,7 @@ for(i in colnames(train_pred[,sapply(train_pred,is.character)])){
 
 model_kag <- rpart(SalePrice ~., data = train_pred, method = "anova")
 predict_kag_pred <- predict(model_kag, test.csv)
+
 head(predict_kag_pred)
 head(train.csv$SalePrice)
 
