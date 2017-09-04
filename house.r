@@ -1,198 +1,71 @@
-setwd("/home/pramod/Documents/Kaggle/House price/")
-#install.packages("corrplot")
-#install.packages("car")
-#install.packages("Metrics")
 
+setwd("Documents/Kaggle/House/")
+library(e1071)
+library(ggplot2)
 library(corrplot)
-library(Metrics)
-require(ggplot2) # for data visualization
-require(stringr) #extracting string patterns
-require(Matrix) # matrix transformations
-require(glmnet) # ridge, lasso & elastinet
-require(xgboost) # gbm
-require(randomForest)
-require(Metrics) # rmse
-require(dplyr) # load this in last so plyr doens't overlap it
-require(caret) # one hot encoding
-require(scales) # plotting $$
-require(e1071) # skewness
-require(corrplot) # correlation plo
+library(dplyr)
+library(tidyr)
+library(rpart)
+library(randomForest)
+library(ggplot2)
 
-test.csv <- read.csv("test.csv",stringsAsFactors = F)
-train.csv <- read.csv("train.csv",stringsAsFactors = F)
+train <- read.csv("train.csv",header = T)
+train[is.na(train)] <- 0
 
-test.csv$Saleprice <- "Null"
+test <- read.csv("test.csv",header = T)
+y_train=train$SalePrice
 
+"""
+Putting the value of sale price in a different variable 
+Removing the prediction or value to be predicted from the Train data set which is the sale price 
+Removing the Id from both the data sets 
+"""
 
-"Splitting the data into Character and Numeric data frames "
-train_num <- select_if(train.csv,is.numeric)
-train_char <- select_if(train.csv,is.character)
+"""
+Data Cleaning
 
-"Adding Sale price and ID to Character DF"
+combine the data,cause we have missing values in both we do it for efficient cleaning 
+Generally we can skip the step if we dont need it
 
-train_char$Price <- train.csv$SalePrice
-train_char$ID <- train.csv$Id
-train_char <- train_char[,c(ncol(train_char),1:ncol(train_char)-1)]
-colnames(train_char)
+"""
 
-"Drawing table to test charac vs numeric data "
-table(train_char$MSZoning)
-table(train_char$Alley)
-table(train_char$LandContour)
-table(train_char$Fence)
-table(train_char$PoolQC)
-table(train_char$GarageType)
+train_num <- select_if(train,is.numeric)
+test_num <- select_if(test,is.numeric)
 
-"Perform glm"
-salecond_saleprice <- glm(train_char$Price~train_char$SaleCondition,data = train_char)
-Saleprice_poolqc <- glm(train_char$Price~ train_char$PoolQC,data = train_char)
-summary(Saleprice_poolqc)
-#linebreaker
+train_num[is.na(train_num)] <- 0
+test_num[is.na(test_num)]<- 0 
+test_num$SalePrice <- 0
+price_svm <- svm(y_train~.,data = train_num)
 
-##Kag: "https://www.kaggle.com/tannercarbonati/detailed-data-analysis-ensemble-modeling/code"##
-#Correlation of Numeric Data with Sale price 
-"Correlation"
-correlations <- cor(train_num)
+train$SalePrice
+head(test_num$SalePrice)
 
+price_predict <- predict(price_svm,train_num)
+price_predict
+table(price_predict,y_train)
 
-corr.SalePrice <- as.matrix(sort(correlations[,'SalePrice'], decreasing = TRUE))
- "Sorting the data "
-corr.idx <- names(which(apply(corr.SalePrice, 1, function(x) (x > 0.5))))
-corr.idx
 
-corrplot(as.matrix(correlations[corr.idx]), type = 'upper', method='color', addCoef.col = 'black', tl.cex = .7,cl.cex = .7, number.cex=.7)
-"Plotting to see which variables have the higher correlation, seems most of them have it "
+price_test_pred <- predict(price_svm,test_num)
 
-correlations_price <- as.data.frame(correlations)
-head(sort(correlations_price$SalePrice,decreasing = T))
+test_num$SalePrice <- price_test_pred
 
 
-"Develop the model "
-train_price <- lm(formula = SalePrice ~ ., data = train_num,na.action='na.exclude')
-train_price
+qplot(test_num$SalePrice,stat_bin = 45)
+qplot(train_num$SalePrice)
+###################################################
 
-"Splitting the test data into numeric data "
-test_price <- select_if(test.csv,is.numeric)
-test_price[is.na(test_price)] <- 0
-test_price$price <- as.numeric('null')
+#No point in using anova
+price_anv  <- rpart(SalePrice ~., data = train_num, method = "anova")
+predict_price_anova <- predict(price_anv,test_num)
 
-"Applying the predict function"
 
-Test_price  <- predict(train_price,test_price,inteval = 'confidence')
+###################################################
 
-"Comparing the means, we can also choose Anova method but this should also be fine "
-mean(Test_price)
-#mean(train_num$SalePrice)
 
-"Seeing that the means are almost the same, we can say that our predicted model based
-on considering only the numeric variables seems to be good "
-"We should look into multicollinearity in the next step"
-
-
-"Better way to find correlation and then use it for prediction compared to the above method" 
-
-s1_data <- train_num
-
-View(s1_data)
-sapply(s1_data, function(x) sum(is.na(x)))
-"Finding which var have highest Na"
-"We see that LotFront + garageyearbuilt and MasVnr have the highest missing values"
-    "Repalce them with the mean values"
-s1_data$LotFrontage[is.na(s1_data$LotFrontage)] <- 80
-s1_data$GarageYrBlt[is.na(s1_data$GarageYrBlt)] <- 1980
-s1_data$MasVnrArea[is.na(s1_data$MasVnrArea)] <- 103
-
-"Always replace the Na values before we perform the Corr"
-
-"Finding the correlation"
-s1_cor <- as.data.frame(cor(s1_data))
-s1_cor_fin <- as.data.frame(s1_cor)
-
-"Taking only the Correlated vairbale of Price with other var"
-s1_cor_price <- as.data.frame(s1_cor[38])
-
-
-summary(s1_cor_price$SalePrice)
-s1_cor_price$SalePrice[is.na(s1_cor_price$SalePrice)] <- 0
-s1_cor_price$names <- colnames(s1_cor)
-View(s1_cor_price)
-
-"Order the data"
-s1_cor_price <- s1_cor_price[order(s1_cor_price$SalePrice,decreasing = T),]
-
-
-"Selecting var which have cor value more than 0.5"
-s1_price <- as.data.frame(s1_cor_price[which(s1_cor_price[,1]>0.5),])
-
-s1_price$names
-
-
-s1_lm1 <- lm(data = s1_data,formula = SalePrice ~ OverallQual+GrLivArea+GarageCars
-                                              +GarageArea+TotalBsmtSF+X1stFlrSF
-                                              +FullBath+TotRmsAbvGrd+YearBuilt+YearRemodAdd)
-
-
-summary(s1_lm1)
-"The p-value is much less than 0.05, we reject the null hypothesis that β = 0. 
-Hence there is a significant relationship between the variables in the linear regression model"
-
-
-price_pred <- predict(s1_lm1,test_price,interval = 'confidence')
-
-
-
-"Selecting var which have cor more than 0.3"
-s1_price2 <- as.data.frame(s1_cor_price[which(s1_cor_price[,1]>0.3),])
-
-View(s1_price2)
-s1_price2$names
-
-
-s1_lm2 <- lm(data = s1_data,formula = SalePrice ~ OverallQual+GrLivArea+GarageCars
-             +GarageArea+TotalBsmtSF+X1stFlrSF
-             +FullBath+TotRmsAbvGrd+YearBuilt+YearRemodAdd+MasVnrArea
-             +Fireplaces+GarageYrBlt+BsmtFinSF1+LotFrontage+WoodDeckSF+X2ndFlrSF+
-               OpenPorchSF)
-
-summary(s1_lm2)
-"The p-value is much less than 0.05, we reject the null hypothesis that β = 0. Hence there 
-is a significant relationship between the variables in the linear regression model of the data set faithful."
-
-price_pred2 <- predict(s1_lm2,test_price)
-
-
-
-"Conlusion: The mean of the first model is much closer to the mean of the house prices when compared to the second model" 
-
-  
-
-"Using complete variables under consideration"
-
-train_price <- lm(formula = SalePrice ~ ., data = train_num,na.action='na.exclude')
-summary(train_price)
-
-"The pvalue is less than 0.05 so we can reject null hypothesis"
-
-
-s2_price <- predict(train_price,test_price,interval = 'confidence')
-
-
-s2_price <- as.data.frame(s2_price)
-View(s2_price)
-test_price$price <- predict(train_price,test_price,interval ='predict')
-View(test_price)
-
-
-
-"Validation of the predicted model"
-"We can perform Diagnostics plot to better understand how our data is distributed 
-And how well our model is prepared.You can find them in another branch - Diagnostic Plots"
-
-
-plot(train_price)
-plot(s1_lm1,pch = 20)
-plot(s1_lm2,pch = 20)
-
-
-
+price_lm <- lm(train_num$SalePrice~.,data = train_num)
+predict_price_lm <- predict(price_lm,test_num)
+#########################################
+qplot(predict_price_lm)
+qplot(predict_price_anova)
+qplot(price_test_pred)
 
